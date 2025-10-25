@@ -1,0 +1,8 @@
+id,tipo,nome,prioridade,tempo_cuidados_minimos
+0,hospital,Hospital Central,0,0
+1,hospital,Hospital São João,0,0
+2,hospital,Hospital Maria Pia,0,0
+3,paciente,Ana Silva,15,2
+4,paciente,Carlos Santos,25,3
+5,paciente,Maria Oliveira,35,2
+6,paciente,João Ferreira,45,4

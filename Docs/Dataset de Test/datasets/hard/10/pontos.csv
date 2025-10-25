@@ -1,0 +1,21 @@
+id,tipo,nome,prioridade,tempo_cuidados_minimos
+0,hospital,Hospital Alpha,0,0
+1,hospital,Hospital Beta,0,0
+2,hospital,Hospital Gamma,0,0
+3,hospital,Hospital Delta,0,0
+4,paciente,Maria João,12,2
+5,paciente,José Carlos,28,1
+6,paciente,Ana Beatriz,42,3
+7,paciente,Pedro Miguel,18,2
+8,paciente,Sofia Isabel,35,1
+9,paciente,Ricardo Tiago,55,2
+10,paciente,Catarina Rosa,67,1
+11,paciente,Francisco José,22,4
+12,paciente,Mariana Luísa,48,2
+13,paciente,António Manuel,73,1
+14,paciente,Teresa Cristina,39,3
+15,paciente,Bruno Alexandre,61,2
+16,paciente,Isabel Fernanda,26,1
+17,paciente,Carlos Henrique,84,2
+18,paciente,Rita Patrícia,31,3
+19,paciente,Miguel Ângelo,77,1

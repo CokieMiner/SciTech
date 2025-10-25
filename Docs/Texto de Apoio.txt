@@ -1,0 +1,101 @@
+﻿Textos de apoio ao desafio
+
+
+Este documento tem como finalidade expor conceitos básicos sobre grafos, complexidade temporal e algumas dicas que deverão ter em conta durante a competição.
+
+
+Será feita uma breve introdução a estes tópicos, uma vez que acreditamos que a qualidade do vosso trabalho poderá ser altamente comprometida por falta destes conceitos que poderão não ser lecionados no vosso ciclo de estudos.
+
+
+Pedimos que prestem atenção à integralidade deste texto, tal como aos restantes documentos que vos serão disponibilizados.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Grafos
+Uma das formas mais claras e eficazes de representar o problema proposto é através de grafos. Numa cidade, as casas com pacientes e os hospitais podem ser representados como vértices de um grafo, enquanto as ruas que os interligam correspondem às arestas. Cada aresta está associada a um tempo de deslocação entre dois pontos, e cada vértice contém dados sobre o paciente. Uma vez que todas as arestas são bidirecionais, as ruas podem ser percorridas nos dois sentidos.
+  
+
+Este modelo de representação dos dados mais visual facilita a compreensão do desafio: em vez de lidar apenas com listas de números ou tabelas, os participantes podem visualizar o mapa da cidade como uma rede de vértices e arestas, identificar caminhos possíveis, calcular distâncias e otimizar decisões visualmente. Além disso, os grafos permitem usar algoritmos que tornam a resolução do problema mais rápida e ajudam a encontrar soluções melhores. 
+A maioria das linguagens de programação já dispõe de bibliotecas que suportam este tipo de estruturas de dados. Por exemplo, com a linguagem Python, é possível utilizar bibliotecas como o NetworkX ou o igraph para criar e analisar grafos de forma simples e intuitiva. Já em MATLAB, existem ferramentas como o Graph and Network Algorithms Toolbox.
+________________
+
+
+Complexidade Temporal
+Neste problema, as ambulâncias têm de decidir, em tempo limitado, quais os pacientes a socorrer e que rotas percorrer. A questão não é apenas encontrar a melhor solução, mas também chegar a ela de forma eficiente, porque algoritmos demasiado lentos deixam de ser viáveis quando o sistema se torna maior e mais complexo.
+É aqui que entra a complexidade temporal, que mede quanto tempo um algoritmo demora a  ser executado à medida que a dimensão do problema aumenta. Algoritmos muito simples, que testam todas as combinações possíveis, podem tornar-se rapidamente ineficazes (p.e.: brute force). À medida  que o número de pacientes e ruas cresce, o número de rotas possíveis aumenta exponencialmente, tornando-se impossível calcular todas em tempo útil.
+Ja métodos mais eficientes, como Dijkstra ou A*, conseguem calcular rotas em milissegundos, mesmo com dezenas de ruas e pacientes. Recorrer a métodos que procuram boas soluções sem testar todas as possibilidades permite obter resultados suficientemente bons de forma rápida, mesmo que não sejam perfeitos.
+  
+
+Nem sempre é possível encontrar a solução perfeita a tempo.  Assim, a utilização de diferentes algoritmos permite alcançar soluções satisfatórias (não perfeitas) num curto espaço de tempo. Um aspeto importante é testar vários algoritmos para descobrir qual é o mais eficiente nesta situação, podendo usar combinações, garantindo sempre o melhor resultado proveniente deles. Este equilíbrio é essencial para identificar soluções rápidas e eficazes em contextos competitivos como hackathons.
+
+
+________________
+
+
+Ajuda ao problema
+Para tornar o processo mais simples, é útil dividir o desafio em subproblemas com diferentes níveis de dificuldade. Além disso, a equipa é aconselhada a distribuir as tarefas entre os membros, aproveitando ao máximo o tempo disponível.
+Recomendamos, por exemplo, começar por representar a cidade de forma clara. Para terem esta modelação, podem usar ferramentas e bibliotecas que geram automaticamente a representação a partir dos ficheiros fornecidos. Isto ajuda a ter uma visão intuitiva da cidade e das suas ruas. Depois, o dataset pode ser estruturado como um grafo, como aconselhado acima, transformando as casas e hospitais em vértices e as ligações entre eles em arestas.
+Após visualizar o problema, pensem em como responder ao problema. O nível seguinte deve-se ao pensamento do algoritmo e à sua realização. O foco passa para a gestão das prioridades dos pacientes, combinando fatores como urgência, tempo de deslocação e tempo de cuidados. Para tal, o algoritmo deve ser capaz de analisar diferentes cenários e calcular qual decisão proporciona o maior benefício dentro do tempo disponível, definindo em seguida a sequência mais eficiente de atendimentos. 
+O último passo consiste em desenvolver uma interface que permita visualizar o percurso dos atendimentos, mostrando a sequência de visitas. A interface deve ser clara e intuitiva.
+Deste modo, a equipa tem todas as ferramentas necessárias para tomar decisões eficazes e enfrentar o desafio com confiança. Boa sorte e bom trabalho!
