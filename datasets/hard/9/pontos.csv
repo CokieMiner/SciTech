@@ -1,0 +1,21 @@
+id,tipo,nome,prioridade,tempo_cuidados_minimos
+0,hospital,Hospital Central,0,0
+1,hospital,Hospital Norte,0,0
+2,hospital,Hospital Sul,0,0
+3,hospital,Hospital Leste,0,0
+4,paciente,Ana Silva,15,1
+5,paciente,Carlos Santos,25,2
+6,paciente,Maria Oliveira,35,1
+7,paciente,João Ferreira,45,3
+8,paciente,Rita Costa,55,2
+9,paciente,Pedro Almeida,65,1
+10,paciente,Sofia Rodrigues,75,2
+11,paciente,Miguel Sousa,85,3
+12,paciente,Catarina Lima,95,1
+13,paciente,Francisco Marques,20,4
+14,paciente,Teresa Fernandes,40,2
+15,paciente,António Pereira,60,1
+16,paciente,Mariana Santos,80,2
+17,paciente,Ricardo Silva,30,3
+18,paciente,Isabel Costa,50,1
+19,paciente,Bruno Oliveira,70,2
