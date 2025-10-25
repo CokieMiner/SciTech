@@ -9,6 +9,10 @@ import tkinter as tk
 from tkinter import ttk
 from tkinter import filedialog, messagebox
 import ttkthemes
+from Data_Import import problem_data_dict_by_each_file, problem_data_dict_by_folder
+from alg import ambulance_routing_optimized
+import pandas as pd
+from typing import Any, Dict
 
 # ============================================================================
 # CONFIGURABLE FUNCTIONS - Replace these with your actual implementations
@@ -16,21 +20,23 @@ import ttkthemes
 
 def load_data_from_folder(folder_path):
     """Replace with your folder loading function"""
-    print(f"Loading data from folder: {folder_path}")
-    # TODO: Replace with actual implementation
-    return True  # Return True if successful, False otherwise
+    return problem_data_dict_by_folder(folder_path)
 
 def load_data_from_files(dados_file, pontos_file, ruas_file):
     """Replace with your individual files loading function"""
-    print(f"Loading files: {dados_file}, {pontos_file}, {ruas_file}")
-    # TODO: Replace with actual implementation
-    return True  # Return True if successful, False otherwise
+    return problem_data_dict_by_each_file(dados_file, pontos_file, ruas_file)
 
-def run_algorithm():
+def run_algorithm(data):
     """Replace with your algorithm execution function"""
-    print("Running algorithm...")
-    # TODO: Replace with actual implementation
-    return "Algorithm completed successfully!"  # Return results string
+    if not data:
+        return "No data loaded"
+    graph = data['graph']
+    points_data = data['points_data']
+    initial_data = data['initial_data']
+    initial_point = initial_data.iloc[0]['ponto_inicial']
+    total_time = initial_data.iloc[0]['tempo_total']
+    route_log = ambulance_routing_optimized(graph, points_data, initial_point, total_time)
+    return route_log
 
 def update_visualization(current_time):
     """Replace with your visualization update function"""
@@ -38,11 +44,10 @@ def update_visualization(current_time):
     # TODO: Replace with actual implementation
     pass
 
-def export_to_pdf():
+def export_to_pdf(data, route_log):
     """Replace with your PDF export function"""
-    print("Exporting to PDF...")
-    # TODO: Replace with actual implementation
-    return True  # Return True if successful
+    print("PDF export not implemented yet")
+    return False
 
 def browse_folder():
     """File dialog for folder selection"""
@@ -64,7 +69,8 @@ class SciTechApp(ttkthemes.ThemedTk):
         super().__init__()
         self.set_theme("plastik")
         self.title("SciTech Ambulance Routing")
-        
+        self.style = ttk.Style(self)
+        self.style.theme_use("plastik")
         # Set window size based on screen dimensions (90% of screen size)
         screen_width = self.winfo_screenwidth()
         screen_height = self.winfo_screenheight()
@@ -80,6 +86,8 @@ class SciTechApp(ttkthemes.ThemedTk):
         
         self.grid_rowconfigure(0, weight=1)
         self.grid_columnconfigure(0, weight=1)
+        self.data = None
+        self.route_log = None
         self._create_widgets()
 
     def _create_widgets(self):
@@ -172,29 +180,68 @@ class SciTechApp(ttkthemes.ThemedTk):
         run_frame.grid(row=1, column=0, sticky=tk.EW, pady=(0, 10))
         run_frame.grid_columnconfigure(0, weight=1)
         ttk.Button(run_frame, text="Run Algorithm", command=self._run_algorithm).grid(row=0, column=0, sticky=tk.EW, pady=(0, 8))
-        self.progress = ttk.Progressbar(run_frame, mode='indeterminate')
-        self.progress.grid(row=1, column=0, sticky=tk.EW)
+        self.run_status_label = ttk.Label(run_frame, text="Status: Ready", foreground="gray")
+        self.run_status_label.grid(row=1, column=0, sticky=tk.W)
 
         # Results Section
         results_frame = ttk.LabelFrame(self.sidebar, text="Results", padding=10)
         results_frame.grid(row=2, column=0, sticky=tk.NSEW, pady=(0, 10))
         results_frame.grid_columnconfigure(0, weight=1)
-        results_frame.grid_rowconfigure(0, weight=1)
+        results_frame.grid_rowconfigure(1, weight=1)
         
-        # Text widget with scrollbar
-        text_frame = ttk.Frame(results_frame)
-        text_frame.grid(row=0, column=0, sticky=tk.NSEW)
-        text_frame.grid_columnconfigure(0, weight=1)
-        text_frame.grid_rowconfigure(0, weight=1)
+        # Summary cards frame
+        summary_frame = ttk.Frame(results_frame)
+        summary_frame.grid(row=0, column=0, sticky=tk.EW, pady=(0, 10))
+        summary_frame.grid_columnconfigure(0, weight=1)
+        summary_frame.grid_columnconfigure(1, weight=1)
+        summary_frame.grid_columnconfigure(2, weight=1)
         
-        self.results_text = tk.Text(text_frame, height=6, wrap=tk.WORD, font=("Consolas", 9))
-        scrollbar = ttk.Scrollbar(text_frame, orient=tk.VERTICAL, command=self.results_text.yview)
-        self.results_text.configure(yscrollcommand=scrollbar.set)
+        # Summary cards with better styling
+        self.patients_card = ttk.LabelFrame(summary_frame, text="Patients", padding=3)
+        self.patients_card.grid(row=0, column=0, sticky=tk.EW, padx=(0, 3))
+        self.patients_value = ttk.Label(self.patients_card, text="0", font=("Arial", 12, "bold"), foreground="blue")
+        self.patients_value.pack()
         
-        self.results_text.grid(row=0, column=0, sticky=tk.NSEW)
-        scrollbar.grid(row=0, column=1, sticky=tk.NS)
+        self.priority_card = ttk.LabelFrame(summary_frame, text="Priority", padding=3)
+        self.priority_card.grid(row=0, column=1, sticky=tk.EW, padx=(3, 3))
+        self.priority_value = ttk.Label(self.priority_card, text="0", font=("Arial", 12, "bold"), foreground="green")
+        self.priority_value.pack()
         
-        self.results_text.insert(tk.END, "Output will appear here...")
+        self.time_card = ttk.LabelFrame(summary_frame, text="Total Time", padding=3)
+        self.time_card.grid(row=0, column=2, sticky=tk.EW, padx=(3, 0))
+        self.time_value = ttk.Label(self.time_card, text="0.0", font=("Arial", 12, "bold"), foreground="purple")
+        self.time_value.pack()
+        
+        # Results table
+        table_frame = ttk.Frame(results_frame)
+        table_frame.grid(row=1, column=0, sticky=tk.NSEW)
+        table_frame.grid_columnconfigure(0, weight=1)
+        table_frame.grid_rowconfigure(0, weight=1)
+        
+        # Create Treeview for results
+        columns = ("Step", "Patient", "Priority", "Time", "Acc. Priority")
+        self.results_tree = ttk.Treeview(table_frame, columns=columns, show="headings", height=8)
+        
+        # Configure columns
+        self.results_tree.heading("Step", text="Step")
+        self.results_tree.heading("Patient", text="Patient")
+        self.results_tree.heading("Priority", text="Priority")
+        self.results_tree.heading("Time", text="Time")
+        self.results_tree.heading("Acc. Priority", text="Acc. Priority")
+        
+        # Set column widths
+        self.results_tree.column("Step", width=40, anchor="center")
+        self.results_tree.column("Patient", width=60, anchor="center")
+        self.results_tree.column("Priority", width=60, anchor="center")
+        self.results_tree.column("Time", width=50, anchor="center")
+        self.results_tree.column("Acc. Priority", width=80, anchor="center")
+        
+        # Add scrollbar to treeview
+        tree_scrollbar = ttk.Scrollbar(table_frame, orient=tk.VERTICAL, command=self.results_tree.yview)
+        self.results_tree.configure(yscrollcommand=tree_scrollbar.set)
+        
+        self.results_tree.grid(row=0, column=0, sticky=tk.NSEW)
+        tree_scrollbar.grid(row=0, column=1, sticky=tk.NS)
 
         # Export Section
         export_frame = ttk.LabelFrame(self.sidebar, text="Export", padding=10)
@@ -352,7 +399,7 @@ class SciTechApp(ttkthemes.ThemedTk):
                 if not folder_path:
                     messagebox.showerror("Error", "Please select a folder path")
                     return
-                success = load_data_from_folder(folder_path)
+                self.data = load_data_from_folder(folder_path)
             else:
                 dados_file = self.dados_entry.get().strip()
                 pontos_file = self.pontos_entry.get().strip()
@@ -361,9 +408,9 @@ class SciTechApp(ttkthemes.ThemedTk):
                 if not all([dados_file, pontos_file, ruas_file]):
                     messagebox.showerror("Error", "Please select all required files")
                     return
-                success = load_data_from_files(dados_file, pontos_file, ruas_file)
+                self.data = load_data_from_files(dados_file, pontos_file, ruas_file)
             
-            if success:
+            if self.data:
                 self.status_label.configure(text="Status: Loaded", foreground="green")
             else:
                 self.status_label.configure(text="Status: Load failed", foreground="red")
@@ -375,27 +422,82 @@ class SciTechApp(ttkthemes.ThemedTk):
     def _run_algorithm(self):
         """Run the algorithm"""
         try:
-            self.progress.start()
-            self.results_text.delete(1.0, tk.END)
-            self.results_text.insert(tk.END, "Running algorithm...\n")
+            if not self.data:
+                messagebox.showerror("Error", "Please load data first")
+                return
+            
+            self.run_status_label.configure(text="Status: Running", foreground="orange")
+            self._clear_results()
             self.update()  # Update UI
             
-            result = run_algorithm()
+            self.route_log = run_algorithm(self.data)
             
-            self.progress.stop()
-            self.results_text.delete(1.0, tk.END)
-            self.results_text.insert(tk.END, result)
+            self.run_status_label.configure(text="Status: Finished", foreground="green")
+            self._display_results()
             
         except Exception as e:
-            self.progress.stop()
+            self.run_status_label.configure(text="Status: Error", foreground="red")
             messagebox.showerror("Error", f"Algorithm failed: {str(e)}")
-            self.results_text.delete(1.0, tk.END)
-            self.results_text.insert(tk.END, f"Error: {str(e)}")
+            self._clear_results()
+    
+    def _clear_results(self):
+        """Clear all results displays"""
+        # Clear summary cards
+        self.patients_value.configure(text="0")
+        self.priority_value.configure(text="0")
+        self.time_value.configure(text="0.0")
+        
+        # Clear results table
+        for item in self.results_tree.get_children():
+            self.results_tree.delete(item)
+    
+    def _display_results(self):
+        """Display algorithm results in structured format"""
+        if not self.route_log:
+            return
+        
+        # Update summary cards
+        total_patients = len(self.route_log)
+        total_priority = sum(step['priority'] for step in self.route_log)
+        total_time = sum(step['time_needed'] for step in self.route_log)
+        
+        self.patients_value.configure(text=str(total_patients))
+        self.priority_value.configure(text=str(total_priority))
+        self.time_value.configure(text=f"{total_time:.1f}")
+        
+        # Populate results table
+        accumulated_priority = 0
+        for i, step in enumerate(self.route_log, 1):
+            accumulated_priority += step['priority']
+            
+            # Add row to treeview
+            self.results_tree.insert("", "end", values=(
+                i,
+                step['to_patient'],
+                step['priority'],
+                f"{step['time_needed']:.1f}",
+                accumulated_priority
+            ))
+        
+        # Color code rows based on priority
+        for item in self.results_tree.get_children():
+            values = self.results_tree.item(item)['values']
+            priority = int(values[2])
+            
+            if priority >= 80:
+                self.results_tree.set(item, "Priority", f"{priority} 🔴")  # High priority
+            elif priority >= 60:
+                self.results_tree.set(item, "Priority", f"{priority} 🟡")  # Medium priority
+            else:
+                self.results_tree.set(item, "Priority", f"{priority} 🟢")  # Low priority
     
     def _export_pdf(self):
         """Export current state to PDF"""
         try:
-            success = export_to_pdf()
+            if not self.route_log:
+                messagebox.showerror("Error", "Please run the algorithm first")
+                return
+            success = export_to_pdf(self.data, self.route_log)
             if success:
                 messagebox.showinfo("Success", "PDF exported successfully!")
             else:
