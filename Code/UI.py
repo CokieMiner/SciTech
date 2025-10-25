@@ -1,4 +1,3 @@
-import tkinter as tk
 from tkinter import ttk  # Import ttk for widgets
 import ttkthemes  # For theming
 
