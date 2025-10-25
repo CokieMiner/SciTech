@@ -70,7 +70,7 @@ def initial_data_df(file_path: str) -> pd.DataFrame:
 def problem_data_dict_by_folder(input_folder: str) -> Dict[str, Any]:
     """
     Loads data and builds the full igraph Graph with attributes.
-    Returns a dictionary with the graph, points data, and initial data.
+    Returns a dictionary with the graph, points data, ruas data, and initial data.
     """
     # Load CSVs
     initial_data = pd.read_csv(f"{input_folder}/dados_iniciais.csv")
@@ -84,13 +84,14 @@ def problem_data_dict_by_folder(input_folder: str) -> Dict[str, Any]:
     return {
         "graph": graph,
         "points_data": points_data,
+        "ruas_data": edges_data,
         "initial_data": initial_data
     }
 
 def problem_data_dict_by_each_file(initial_data_file: str, points_data_file: str, edges_data_file: str) -> Dict[str, Any]:
     """
     Loads data and builds the full igraph Graph with attributes.
-    Returns a dictionary with the graph, points data, and initial data.
+    Returns a dictionary with the graph, points data, ruas data, and initial data.
     """
     # Load CSVs
     initial_data = pd.read_csv(initial_data_file)
@@ -104,6 +105,7 @@ def problem_data_dict_by_each_file(initial_data_file: str, points_data_file: str
     return {
         "graph": graph,
         "points_data": points_data,
+        "ruas_data": edges_data,
         "initial_data": initial_data
     }
 

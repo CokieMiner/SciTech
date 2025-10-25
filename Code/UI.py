@@ -11,7 +11,10 @@ from tkinter import filedialog, messagebox
 import ttkthemes
 from .Data_Import import problem_data_dict_by_each_file, problem_data_dict_by_folder
 from .alg import ambulance_routing_optimized
+from .PDF_Export import export_ambulance_routing_pdf
+from .graph_view import create_canvas, plot_graph
 from typing import Any, Dict, Optional, List, Tuple
+import sys
 
 # ============================================================================
 # CONFIGURABLE FUNCTIONS - Replace these with your actual implementations
@@ -37,16 +40,10 @@ def run_algorithm(data: Dict[str, Any]) -> List[Dict[str, Any]]:
     route_log = ambulance_routing_optimized(graph, points_data, initial_point, total_time)
     return route_log
 
-def update_visualization(current_time: float) -> None:
-    """Replace with your visualization update function"""
-    print(f"Updating visualization at time: {current_time}")
-    # TODO: Replace with actual implementation
-    pass
-
-def export_to_pdf(data: Dict[str, Any], route_log: List[Dict[str, Any]]) -> bool:
-    """Replace with your PDF export function"""
-    print("PDF export not implemented yet")
-    return False
+def export_to_pdf(data: Dict[str, Any], route_log: List[Dict[str, Any]], output_path: Optional[str] = None) -> bool:
+    """Export results to PDF using template"""
+    from .PDF_Export import export_to_pdf as pdf_export
+    return pdf_export(data, route_log, output_path)
 
 def browse_folder() -> Optional[str]:
     """File dialog for folder selection"""
@@ -62,8 +59,7 @@ def browse_file(title: str = "Select File", filetypes: Optional[List[Tuple[str, 
 # CONFIGURATION VARIABLES - Modify these as needed
 # ============================================================================
 
-ANIMATION_MAX_TIME = 100  # Set to your animation duration
-ANIMATION_SPEED_MS = 100  # Animation step delay in milliseconds
+
 
 class SciTechApp(ttkthemes.ThemedTk):
     def __init__(self):
@@ -89,7 +85,9 @@ class SciTechApp(ttkthemes.ThemedTk):
         self.grid_columnconfigure(0, weight=1)
         self.data = None
         self.route_log = None
+        self.canvas = None
         self._create_widgets()
+        self.protocol("WM_DELETE_WINDOW", self._on_closing)
 
     def _create_widgets(self):
         
@@ -250,62 +248,68 @@ class SciTechApp(ttkthemes.ThemedTk):
         export_frame.grid_columnconfigure(0, weight=1)
         ttk.Button(export_frame, text="Export PDF", command=self._export_pdf).grid(row=0, column=0, sticky=tk.EW)
 
-        # Right main area - expandable
+        # Right main area - expandable with 3 columns: node list, spacer, visualization
         main_area = ttk.Frame(self.main_frame)
         main_area.grid(row=0, column=1, sticky=tk.NSEW, padx=(5, 0))
         main_area.grid_rowconfigure(0, weight=1)
-        main_area.grid_columnconfigure(0, weight=1)
+        main_area.grid_columnconfigure(0, weight=0)  # Node list - fixed width
+        main_area.grid_columnconfigure(1, weight=0)  # Small spacer
+        main_area.grid_columnconfigure(2, weight=1)  # Visualization - expandable
 
-        # Visualization Section
+        # Node List Section (between sidebar and visualization)
+        nodes_frame = ttk.LabelFrame(main_area, text="Nodes", padding=10)
+        nodes_frame.grid(row=0, column=0, sticky=tk.NSEW, padx=(0, 5))
+        nodes_frame.grid_rowconfigure(0, weight=1)
+        nodes_frame.grid_columnconfigure(0, weight=1)
+        nodes_frame.configure(width=250)  # Increased width for node list (+5%)
+        nodes_frame.grid_propagate(False)
+        
+        # Create TreeView for nodes
+        nodes_tree_frame = ttk.Frame(nodes_frame)
+        nodes_tree_frame.grid(row=0, column=0, sticky=tk.NSEW)
+        nodes_tree_frame.grid_columnconfigure(0, weight=1)
+        nodes_tree_frame.grid_rowconfigure(0, weight=1)
+        
+        # Node TreeView
+        node_columns = ("ID", "Type", "Priority")
+        self.nodes_tree = ttk.Treeview(nodes_tree_frame, columns=node_columns, show="headings", height=15)
+        
+        # Configure node columns
+        self.nodes_tree.heading("ID", text="ID")
+        self.nodes_tree.heading("Type", text="Type")
+        self.nodes_tree.heading("Priority", text="Priority")
+        
+        # Set node column widths
+        self.nodes_tree.column("ID", width=30, anchor="center")
+        self.nodes_tree.column("Type", width=80, anchor="center")
+        self.nodes_tree.column("Priority", width=60, anchor="center")
+        
+        # Add scrollbar to nodes treeview
+        nodes_scrollbar = ttk.Scrollbar(nodes_tree_frame, orient=tk.VERTICAL, command=self.nodes_tree.yview)
+        self.nodes_tree.configure(yscrollcommand=nodes_scrollbar.set)
+        
+        self.nodes_tree.grid(row=0, column=0, sticky=tk.NSEW)
+        nodes_scrollbar.grid(row=0, column=1, sticky=tk.NS)
+
+        # Visualization Section (reduced width by 10%)
         viz_frame = ttk.LabelFrame(main_area, text="Visualization", padding=15)
-        viz_frame.grid(row=0, column=0, sticky=tk.NSEW)
+        viz_frame.grid(row=0, column=2, sticky=tk.NSEW)
         viz_frame.grid_rowconfigure(0, weight=1)
         viz_frame.grid_columnconfigure(0, weight=1)
         
-        # Placeholder for canvas
-        canvas_placeholder = tk.Label(viz_frame, text="Canvas Space for Graph\n(Matplotlib will go here)", 
-                                     background="white", foreground="gray", 
-                                     font=("Arial", 12), anchor=tk.CENTER,
-                                     relief=tk.SUNKEN, bd=1)
-        canvas_placeholder.grid(row=0, column=0, sticky=tk.NSEW, pady=(0, 15))
+        # Frame for matplotlib canvas
+        self.viz_container = ttk.Frame(viz_frame)
+        self.viz_container.grid(row=0, column=0, sticky=tk.NSEW)
+        self.viz_container.grid_rowconfigure(0, weight=1)
+        self.viz_container.grid_columnconfigure(0, weight=1)
+        
+        # Placeholder label (will be replaced by canvas)
+        self.viz_placeholder = tk.Label(self.viz_container, text="Load data to view graph", 
+                                       background="white", foreground="gray", 
+                                       font=("Arial", 12), anchor=tk.CENTER)
+        self.viz_placeholder.grid(row=0, column=0, sticky=tk.NSEW)
 
-        # Controls
-        controls_frame = ttk.Frame(viz_frame)
-        controls_frame.grid(row=1, column=0, sticky=tk.EW, pady=(0, 10))
-        
-        # Animation control buttons
-        self.play_button = ttk.Button(controls_frame, text="▶ Start", command=self._start_animation)
-        self.play_button.grid(row=0, column=0, padx=(0, 10))
-        
-        self.pause_button = ttk.Button(controls_frame, text="⏸ Pause", command=self._pause_animation, state="disabled")
-        self.pause_button.grid(row=0, column=1, padx=(0, 10))
-        
-        ttk.Checkbutton(controls_frame, text="Show Labels").grid(row=0, column=2, padx=(0, 10))
-        
-        # Add some spacing on the right
-        controls_frame.grid_columnconfigure(3, weight=1)
-        
-        # Time slider controls
-        slider_frame = ttk.Frame(viz_frame)
-        slider_frame.grid(row=2, column=0, sticky=tk.EW)
-        slider_frame.grid_columnconfigure(1, weight=1)
-        
-        # Time label and slider
-        ttk.Label(slider_frame, text="Time:").grid(row=0, column=0, padx=(0, 10))
-        
-        self.time_var = tk.DoubleVar(value=0)
-        self.time_slider = ttk.Scale(slider_frame, from_=0, to=100, orient=tk.HORIZONTAL, 
-                                   variable=self.time_var, command=self._on_time_change)
-        self.time_slider.grid(row=0, column=1, sticky=tk.EW, padx=(0, 10))
-        
-        self.time_label = ttk.Label(slider_frame, text="0:00 / 10:00")
-        self.time_label.grid(row=0, column=2)
-        
-        # Animation state
-        self.animation_running = False
-        self.animation_job = None
-        self.current_time = 0
-        self.max_time = ANIMATION_MAX_TIME
+
 
     def _toggle_input_mode(self):
         if self.input_mode.get() == "folder":
@@ -321,58 +325,113 @@ class SciTechApp(ttkthemes.ThemedTk):
             # Clear folder entry
             self.folder_entry.delete(0, tk.END)
 
-    def _start_animation(self):
-        """Start the visualization animation"""
-        if not self.animation_running:
-            self.animation_running = True
-            self.play_button.configure(state="disabled")
-            self.pause_button.configure(state="normal")
-            self._animate_step()
+
+
+    def _on_closing(self):
+        """Handle window close event"""
+        self.quit()
+        sys.exit(0)
+        
+    def _populate_nodes_tree(self):
+        """Populate the nodes TreeView with data in numerical order"""
+        try:
+            # Clear existing items
+            for item in self.nodes_tree.get_children():
+                self.nodes_tree.delete(item)
             
-    def _pause_animation(self):
-        """Pause the visualization animation"""
-        if self.animation_running:
-            self.animation_running = False
-            self.play_button.configure(state="normal")
-            self.pause_button.configure(state="disabled")
-            if self.animation_job:
-                self.after_cancel(self.animation_job)
-                self.animation_job = None
+            if self.data and 'points_data' in self.data:
+                df_pontos = self.data['points_data']
                 
-    def _animate_step(self):
-        """Single animation step - placeholder for actual animation logic"""
-        if self.animation_running:
-            # Update current time
-            self.current_time += 1
-            if self.current_time > self.max_time:
-                self.current_time = 0  # Loop animation
+                # Sort by index (numerical order)
+                for i in range(len(df_pontos)):
+                    row = df_pontos.iloc[i]
+                    node_type = row['tipo']
+                    
+                    if node_type != "hospital":
+                        priority = row['prioridade']
+                        self.nodes_tree.insert("", "end", values=(
+                            i,
+                            "Patient",
+                            priority
+                        ))
+                    else:
+                        self.nodes_tree.insert("", "end", values=(
+                            i,
+                            "Hospital",
+                            "-"
+                        ))
+        except Exception as e:
+            print(f"Error populating nodes tree: {e}")
+            import traceback
+            traceback.print_exc()
+
+    def _create_graph_viz(self):
+        """Create the graph visualization canvas"""
+        try:
+            if self.data and 'points_data' in self.data and 'ruas_data' in self.data:
+                # Remove placeholder
+                self.viz_placeholder.grid_forget()
+                # Create canvas
+                self.canvas = create_canvas(self.viz_container, self.data['points_data'], self.data['ruas_data'])
+                self.canvas.get_tk_widget().grid(row=0, column=0, sticky=tk.NSEW)
+                self.canvas.draw()
+                # Populate nodes tree
+                self._populate_nodes_tree()
+            else:
+                print("Data not complete for visualization")
+        except Exception as e:
+            print(f"Error creating graph viz: {e}")
+            import traceback
+            traceback.print_exc()
+    
+    def _update_graph_viz_with_route(self):
+        """Update the graph visualization to show the route"""
+        try:
+            if self.data and self.route_log and 'points_data' in self.data and 'ruas_data' in self.data:
+                # Clear existing canvas
+                if self.canvas:
+                    self.canvas.get_tk_widget().destroy()
+                
+                # Create new canvas with route
+                self.canvas = create_canvas(self.viz_container, self.data['points_data'], 
+                                          self.data['ruas_data'], self.route_log)
+                self.canvas.get_tk_widget().grid(row=0, column=0, sticky=tk.NSEW)
+                self.canvas.draw()
+                
+                # Update nodes tree to highlight visited nodes
+                self._update_nodes_tree_with_route()
+        except Exception as e:
+            print(f"Error updating graph viz with route: {e}")
+            import traceback
+            traceback.print_exc()
+    
+    def _update_nodes_tree_with_route(self):
+        """Update nodes tree to highlight visited nodes"""
+        try:
+            if not self.route_log:
+                return
+                
+            # Get visited patients
+            visited_patients = {step['to_patient'] for step in self.route_log}
             
-            # Update slider position
-            self.time_var.set(self.current_time)
-            self._update_time_display()
-            
-            # Update visualization using configurable function
-            update_visualization(self.current_time)
-            
-            # Schedule next step
-            self.animation_job = self.after(ANIMATION_SPEED_MS, self._animate_step)
-            
-    def _on_time_change(self, value):
-        """Handle time slider changes"""
-        self.current_time = float(value)
-        self._update_time_display()
-        # Update visualization using configurable function
-        update_visualization(self.current_time)
-        
-    def _update_time_display(self):
-        """Update the time display label"""
-        current_minutes = int(self.current_time // 60)
-        current_seconds = int(self.current_time % 60)
-        max_minutes = int(self.max_time // 60)
-        max_seconds = int(self.max_time % 60)
-        
-        time_text = f"{current_minutes}:{current_seconds:02d} / {max_minutes}:{max_seconds:02d}"
-        self.time_label.configure(text=time_text)
+            # Update tree items to highlight visited nodes
+            for item in self.nodes_tree.get_children():
+                values = self.nodes_tree.item(item)['values']
+                node_id = int(values[0])
+                node_type = values[1]
+                
+                if node_type == "Patient" and f"P{node_id:03d}" in visited_patients:
+                    # Highlight visited patients (you can customize the highlighting)
+                    self.nodes_tree.set(item, "Type", "Patient ✓")
+                else:
+                    # Reset highlighting for non-visited
+                    if node_type == "Patient ✓":
+                        self.nodes_tree.set(item, "Type", "Patient")
+                        
+        except Exception as e:
+            print(f"Error updating nodes tree with route: {e}")
+            import traceback
+            traceback.print_exc()
 
     # ========================================================================
     # CALLBACK METHODS - These use the configurable functions above
@@ -413,6 +472,8 @@ class SciTechApp(ttkthemes.ThemedTk):
             
             if self.data:
                 self.status_label.configure(text="Status: Loaded", foreground="green")
+                # Create graph visualization
+                self._create_graph_viz()
             else:
                 self.status_label.configure(text="Status: Load failed", foreground="red")
                 
@@ -435,6 +496,8 @@ class SciTechApp(ttkthemes.ThemedTk):
             
             self.run_status_label.configure(text="Status: Finished", foreground="green")
             self._display_results()
+            # Update nodes tree to highlight visited nodes (without updating graph)
+            self._update_nodes_tree_with_route()
             
         except Exception as e:
             self.run_status_label.configure(text="Status: Error", foreground="red")
@@ -486,21 +549,37 @@ class SciTechApp(ttkthemes.ThemedTk):
             priority = int(values[2])
             
             if priority >= 80:
-                self.results_tree.set(item, "Priority", f"{priority} 🔴")  # High priority
+                self.results_tree.set(item, "Priority", f"{priority}")  # High priority
             elif priority >= 60:
-                self.results_tree.set(item, "Priority", f"{priority} 🟡")  # Medium priority
+                self.results_tree.set(item, "Priority", f"{priority}")  # Medium priority
             else:
-                self.results_tree.set(item, "Priority", f"{priority} 🟢")  # Low priority
-    
+                self.results_tree.set(item, "Priority", f"{priority}")  # Low priority
+
     def _export_pdf(self):
         """Export current state to PDF"""
         try:
             if not self.route_log:
                 messagebox.showerror("Error", "Please run the algorithm first")
                 return
-            success = export_to_pdf(self.data, self.route_log)
+            
+            # Open file dialog to choose save location
+            from datetime import datetime
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            default_filename = f"ambulance_routing_report_{timestamp}.pdf"
+            
+            file_path = filedialog.asksaveasfilename(
+                title="Save PDF Report As",
+                defaultextension=".pdf",
+                filetypes=[("PDF files", "*.pdf"), ("All files", "*.*")],
+                initialfile=default_filename
+            )
+            
+            if not file_path:  # User cancelled the dialog
+                return
+                
+            success = export_to_pdf(self.data, self.route_log, file_path)
             if success:
-                messagebox.showinfo("Success", "PDF exported successfully!")
+                messagebox.showinfo("Success", f"PDF exported successfully to:\n{file_path}")
             else:
                 messagebox.showerror("Error", "Failed to export PDF")
         except Exception as e:
