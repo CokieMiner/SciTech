@@ -112,6 +112,6 @@ def run_from_csv_optimized(input_folder: str) -> List[Dict[str, Any]]:
     return ambulance_routing_optimized(graph, pontos_data, initial_point, total_time)
 
 if __name__ == "__main__":
-    log = run_from_csv_optimized("/home/pedrom/Documentos/SciTech/SciTech/Docs/Dataset de Test/datasets/hard/8")
+    log = run_from_csv_optimized("/home/pedrom/Documentos/SciTech/SciTech/Dataset de Test/datasets/hard/8")
     for step in log:
         print(step)
