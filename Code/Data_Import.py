@@ -19,7 +19,7 @@ def pd_to_igraph(data: pd.DataFrame) -> Optional[igraph.Graph]:
     Assumes columns: origin, dest, time.
     """
     try:
-        graph = igraph.Graph(directed=True)
+        graph = igraph.Graph(directed=False)
         # Add vertices based on max ID
         max_id = max(data['ponto_origem'].max(), data['ponto_destino'].max())
         graph.add_vertices(max_id + 1)
@@ -67,7 +67,7 @@ def initial_data_df(file_path: str) -> pd.DataFrame:
     return df
 
 
-def problem_data_dict(input_folder: str) -> Dict[str, Any]:
+def problem_data_dict_by_folder(input_folder: str) -> Dict[str, Any]:
     """
     Loads data and builds the full igraph Graph with attributes.
     Returns a dictionary with the graph, points data, and initial data.
@@ -87,9 +87,25 @@ def problem_data_dict(input_folder: str) -> Dict[str, Any]:
         "initial_data": initial_data
     }
 
+def problem_data_dict_by_each_file(initial_data_file: str, points_data_file: str, edges_data_file: str) -> Dict[str, Any]:
+    """
+    Loads data and builds the full igraph Graph with attributes.
+    Returns a dictionary with the graph, points data, and initial data.
+    """
+    # Load CSVs
+    initial_data = pd.read_csv(initial_data_file)
+    points_data = pd.read_csv(points_data_file)
+    edges_data = pd.read_csv(edges_data_file)
 
+    # Build graph
+    graph = pd_to_igraph(edges_data)  # Now returns undirected graph
+    add_points_data_to_graph(graph, points_data)
 
-
+    return {
+        "graph": graph,
+        "points_data": points_data,
+        "initial_data": initial_data
+    }
 
 
 # ----------------------------------------------------  Test Cases -----------------------------------------------------------------------------------
@@ -98,7 +114,7 @@ def problem_data_dict(input_folder: str) -> Dict[str, Any]:
 
 class TestStart(unittest.TestCase):
     def test_load_data(self):
-        df = load_data("/home/pedrom/Documentos/SciTech/Dataset de Test/datasets/hard/10/ruas.csv")
+        df = load_data("/home/pedrom/Documentos/SciTech/SciTech/Docs/Dataset de Test/datasets/hard/10/ruas.csv")
         self.assertIsNotNone(df)
         self.assertEqual(len(df.columns), 3)
 
@@ -118,19 +134,19 @@ class TestStart(unittest.TestCase):
         self.assertEqual(graph.vs[0]['Name'], 'A')
 
     def test_initial_data_df(self):
-        df = initial_data_df("/home/pedrom/Documentos/SciTech/Dataset de Test/datasets/hard/10/dados_iniciais.csv")
+        df = initial_data_df("/home/pedrom/Documentos/SciTech/SciTech/Docs/Dataset de Test/datasets/hard/10/dados_iniciais.csv")
         self.assertIsNotNone(df)
         self.assertEqual(df.iloc[0]['ponto_inicial'], 0)
 
     def test_problem_data_df(self):
-        data = problem_data_dict("/home/pedrom/Documentos/SciTech/Dataset de Test/datasets/hard/10")
+        data = problem_data_dict_by_folder("/home/pedrom/Documentos/SciTech/SciTech/Docs/Dataset de Test/datasets/hard/10")
         self.assertIn('graph', data)
         self.assertIn('points_data', data)
         self.assertIn('initial_data', data)
 
     def test_show_hard_10_data(self):
         """Test that loads and displays the hard/10 dataset in the terminal."""
-        data = problem_data_dict("/home/pedrom/Documentos/SciTech/Dataset de Test/datasets/hard/10")
+        data = problem_data_dict_by_folder("/home/pedrom/Documentos/SciTech/SciTech/Docs/Dataset de Test/datasets/hard/10")
         print("\n=== Hard/10 Dataset Summary ===")
         print(f"Graph: {data['graph'].vcount()} vertices, {data['graph'].ecount()} edges")
         print("Points Data:")
