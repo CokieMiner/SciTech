@@ -9,27 +9,26 @@ import tkinter as tk
 from tkinter import ttk
 from tkinter import filedialog, messagebox
 import ttkthemes
-from Data_Import import problem_data_dict_by_each_file, problem_data_dict_by_folder
-from alg import ambulance_routing_optimized
-import pandas as pd
-from typing import Any, Dict
+from .Data_Import import problem_data_dict_by_each_file, problem_data_dict_by_folder
+from .alg import ambulance_routing_optimized
+from typing import Any, Dict, Optional, List, Tuple
 
 # ============================================================================
 # CONFIGURABLE FUNCTIONS - Replace these with your actual implementations
 # ============================================================================
 
-def load_data_from_folder(folder_path):
+def load_data_from_folder(folder_path: str) -> Optional[Dict[str, Any]]:
     """Replace with your folder loading function"""
     return problem_data_dict_by_folder(folder_path)
 
-def load_data_from_files(dados_file, pontos_file, ruas_file):
+def load_data_from_files(dados_file: str, pontos_file: str, ruas_file: str) -> Optional[Dict[str, Any]]:
     """Replace with your individual files loading function"""
     return problem_data_dict_by_each_file(dados_file, pontos_file, ruas_file)
 
-def run_algorithm(data):
+def run_algorithm(data: Dict[str, Any]) -> List[Dict[str, Any]]:
     """Replace with your algorithm execution function"""
     if not data:
-        return "No data loaded"
+        return []
     graph = data['graph']
     points_data = data['points_data']
     initial_data = data['initial_data']
@@ -38,23 +37,25 @@ def run_algorithm(data):
     route_log = ambulance_routing_optimized(graph, points_data, initial_point, total_time)
     return route_log
 
-def update_visualization(current_time):
+def update_visualization(current_time: float) -> None:
     """Replace with your visualization update function"""
     print(f"Updating visualization at time: {current_time}")
     # TODO: Replace with actual implementation
     pass
 
-def export_to_pdf(data, route_log):
+def export_to_pdf(data: Dict[str, Any], route_log: List[Dict[str, Any]]) -> bool:
     """Replace with your PDF export function"""
     print("PDF export not implemented yet")
     return False
 
-def browse_folder():
+def browse_folder() -> Optional[str]:
     """File dialog for folder selection"""
     return filedialog.askdirectory(title="Select Data Folder")
 
-def browse_file(title="Select File", filetypes=[("CSV files", "*.csv"), ("All files", "*.*")]):
+def browse_file(title: str = "Select File", filetypes: Optional[List[Tuple[str, str]]] = None) -> Optional[str]:
     """File dialog for file selection"""
+    if filetypes is None:
+        filetypes = [("CSV files", "*.csv"), ("All files", "*.*")]
     return filedialog.askopenfilename(title=title, filetypes=filetypes)
 
 # ============================================================================

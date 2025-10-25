@@ -2,7 +2,7 @@
 import pandas as pd
 import igraph  # type: ignore
 from typing import Dict, Any, List, Tuple, Optional
-from Data_Import import pd_to_igraph, add_points_data_to_graph  # Usa o teu código original
+from .Data_Import import pd_to_igraph, add_points_data_to_graph  # Usa o teu código original
 
 def precompute_all_pairs_shortest_paths(graph: igraph.Graph) -> Tuple[Dict[Tuple[int, int], float], Dict[Tuple[int, int], List[int]]]:
     """
