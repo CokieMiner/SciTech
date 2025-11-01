@@ -105,6 +105,7 @@ def plot_graph(
     # Colorbar
     sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
     sm.set_array([])
+    cbar = fig.colorbar(sm, ax=ax, orientation='vertical', label='Prioridade')
 
     return fig
 
